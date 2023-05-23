@@ -44,3 +44,15 @@ export function getTenantPrefixUrl(): string {
 export function isAbortError(error: unknown): error is AbortError {
   return error instanceof AbortError;
 }
+
+export function toSearchParams<T extends string>(
+  data: Partial<Record<T, string | number | boolean | (string | number | boolean)[]>>
+) {
+  const searchParams = new URLSearchParams();
+  for (const [name, value] of Object.entries(data)) {
+    if (typeof value === 'undefined') continue;
+    if (Array.isArray(value)) value.forEach((item) => searchParams.append(name, String(item)));
+    else searchParams.set(name, String(value));
+  }
+  return searchParams;
+}

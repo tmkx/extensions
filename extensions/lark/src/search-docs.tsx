@@ -9,6 +9,7 @@ import {
   fetchRecentList,
   searchDocs,
   removeRecentDocument,
+  NodeType,
   RecentListResponse as RecentList,
   SearchDocsResponse as SearchResults,
 } from './services/space';
@@ -16,18 +17,20 @@ import { StorageKey } from './utils/storage';
 import { preference } from './utils/config';
 
 const SearchDocsView: React.FC = () => {
+  const [filterType, setFilterType] = useCachedState(StorageKey.DocsFilterType, '');
   const [cachedRecentList, setCachedRecentList] = useCachedState<RecentList | null>(StorageKey.DocsRecentList, null);
   const [searchKeywords, setSearchKeywords] = useState('');
+  const filterNodeType = parseNodeType(filterType);
   const {
     isFetching,
     data: documentList,
     refetch,
   } = useQuery<SearchResults | RecentList | null>({
-    queryKey: ['SearchDocsView', searchKeywords],
+    queryKey: ['SearchDocsView', filterType, searchKeywords],
     queryFn: ({ signal }) =>
       searchKeywords
-        ? searchDocs({ query: searchKeywords }, signal)
-        : fetchRecentList(preference.recentListCount, signal).then((data) => {
+        ? searchDocs({ query: searchKeywords, count: preference.recentListCount, obj_types: filterNodeType }, signal)
+        : fetchRecentList({ length: preference.recentListCount, obj_type: filterNodeType }, signal).then((data) => {
             setCachedRecentList(data);
             return data;
           }),
@@ -46,6 +49,7 @@ const SearchDocsView: React.FC = () => {
     <List
       isLoading={isFetching}
       searchBarPlaceholder="Search documents..."
+      searchBarAccessory={<SearchBar storeValue onChange={setFilterType} />}
       onSearchTextChange={setSearchKeywords}
       throttle
     >
@@ -62,6 +66,34 @@ const SearchDocsView: React.FC = () => {
 
 const isRecentList = (list: RecentList | SearchResults): list is RecentList => {
   return 'nodes' in list.entities;
+};
+
+function parseNodeType(value: string): NodeType[] {
+  if (!value) return [];
+  return value.split(',').map(Number);
+}
+
+const SearchBar = (props: Partial<List.Dropdown.Props>) => {
+  return (
+    <List.Dropdown tooltip="Set filter" {...props}>
+      <List.Dropdown.Item title="All types" icon={Icon.Stars} value="" />
+      <List.Dropdown.Item title="Wiki" icon={`space-icons/type-${NodeType.Wik}.svg`} value={String([NodeType.Wik])} />
+      <List.Dropdown.Item
+        title="Docs"
+        icon={`space-icons/type-${NodeType.Dox}.svg`}
+        value={String([NodeType.Doc, NodeType.Dox])}
+      />
+      <List.Dropdown.Item title="Sheets" icon={`space-icons/type-${NodeType.Sht}.svg`} value={String([NodeType.Sht])} />
+      <List.Dropdown.Item title="Slides" icon={`space-icons/type-${NodeType.Sld}.svg`} value={String([NodeType.Sld])} />
+      <List.Dropdown.Item title="Base" icon={`space-icons/type-${NodeType.Bas}.svg`} value={String([NodeType.Bas])} />
+      <List.Dropdown.Item
+        title="MindNotes"
+        icon={`space-icons/type-${NodeType.Bmn}.svg`}
+        value={String([NodeType.Bmn])}
+      />
+      <List.Dropdown.Item title="Local files" icon={Icon.BlankDocument} value={String([NodeType.Box])} />
+    </List.Dropdown>
+  );
 };
 
 const RecentDocumentsView: React.FC<{

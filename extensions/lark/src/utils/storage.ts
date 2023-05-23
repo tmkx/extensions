@@ -5,6 +5,7 @@ export const StorageKey = {
   TenantDomain: 'TENANT_DOMAIN',
   SpaceSession: 'SPACE_SESSION',
   DocsRecentList: 'DOCS_RECENT_LIST',
+  DocsFilterType: 'DOCS_FILTER_TYPE',
 } as const;
 
 export type StorageKey = ValueOf<typeof StorageKey>;
@@ -13,6 +14,7 @@ type StorageTypes = {
   TENANT_DOMAIN: string;
   SPACE_SESSION: string;
   DOCS_RECENT_LIST: RecentListResponse;
+  DOCS_FILTER_TYPE: string;
 };
 
 export async function setStorage<K extends StorageKey>(key: K, value: StorageTypes[K]): Promise<void> {

@@ -1,7 +1,7 @@
 import { Toast, showToast, LocalStorage } from '@raycast/api';
 import got from 'got';
 import { trimTagsAndDecodeEntities } from '../utils/string';
-import { cookieJar, getTenantPrefixUrl, isAbortError } from './shared';
+import { cookieJar, getTenantPrefixUrl, isAbortError, toSearchParams } from './shared';
 
 export type UserID = string;
 export type NodeID = string;
@@ -18,7 +18,7 @@ export const enum NodeType {
   /** Bitable */
   Bas = 8,
   /** Slides */
-  Sld = 15,
+  Sld = 30,
   /** MindNotes */
   Bmn = 11,
   /** Local files */
@@ -168,10 +168,13 @@ function prependUrl(url: string) {
   return `${getTenantPrefixUrl()}/space/api/${url}`;
 }
 
-export async function fetchRecentList(length: number, signal?: AbortSignal): Promise<RecentListResponse> {
+export async function fetchRecentList(
+  params: { length: number; obj_type?: NodeType[] },
+  signal?: AbortSignal
+): Promise<RecentListResponse> {
   try {
     const { body } = await client.get<RecentListResponse>(prependUrl('explorer/recent/list/'), {
-      searchParams: { length },
+      searchParams: toSearchParams(params),
       signal,
     });
     return body;
@@ -195,6 +198,7 @@ export async function fetchRecentList(length: number, signal?: AbortSignal): Pro
 
 export interface SearchDocsParams {
   query: string;
+  obj_types?: NodeType[];
   offset?: number;
   count?: number;
 }
@@ -202,7 +206,7 @@ export interface SearchDocsParams {
 export async function searchDocs(params: SearchDocsParams, signal?: AbortSignal): Promise<SearchDocsResponse> {
   try {
     const { body } = await client.get<SearchDocsResponse>(prependUrl('search/refine_search/'), {
-      searchParams: { offset: 0, count: 15, ...params },
+      searchParams: toSearchParams({ offset: 0, ...params }),
       signal,
     });
     Object.keys(body.entities.objs).forEach((key) => {
